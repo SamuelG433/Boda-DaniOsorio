@@ -1,0 +1,11 @@
+{
+  "title": "Daniela&Felipe",
+  "description": "This elegant landing page for weddings features a loading screen with music, a timeline, dress code details, venue information, and a RSVP form for guests.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

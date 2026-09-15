@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Jost:wght@300;400;500&display=swap');
+@import 'tailwindcss';
+
+@theme inline {
+  --font-cursive: 'Alex Brush', cursive;
+  --font-sans: 'Jost', sans-serif;
+
+  --color-khaki-50:  #EBE4D3;
+  --color-khaki-100: #EFDFC6;
+  --color-khaki-200: #d6c89e;
+  --color-khaki-300: #b5a87a;
+  --color-khaki-400: #9a9668;
+  --color-khaki-500: #848867;
+  --color-khaki-600: #6b6e52;
+  --color-khaki-700: #4d5238;
+  --color-khaki-800: #262F1C;
+  --color-khaki-900: #1a2113;
+
+  --color-background: var(--color-khaki-50);
+  --color-foreground: var(--color-khaki-900);
+  --color-primary: var(--color-khaki-500);
+  --color-primary-foreground: white;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
