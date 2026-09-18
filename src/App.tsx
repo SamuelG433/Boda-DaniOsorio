@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { MapPin, Navigation } from 'lucide-react';
+import { MapPin, Navigation, Users, Heart, Wine, Moon } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import song from './imports/Carla_Morrison_-_Contigo_Live_Performance_Fender_Sessions_-_Carla_Morrison.mp3';
 
@@ -11,22 +11,39 @@ gsap.registerPlugin(ScrollTrigger);
 const SERVER_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-cb9f5f97`;
 
 // ── Fotos ─────────────────────────────────────────────────────────────────────
-// Cuando tengas los archivos, descomentar el import y asignar a la constante.
-// import heroPrincipal from './imports/PRINCIPAL.jpg';
-// import slideSegunda  from './imports/SEGUNDA.jpg';
-// import slideTercera  from './imports/TERCERA.jpg';
-// import slideCuarta   from './imports/CUARTA.jpg';
-// import slideQuinta   from './imports/QUINTA.jpg';
-// import slideSexta    from './imports/SEXTA.jpg';
+import heroPrincipal from './imports/PRINCIPAL.JPEG';
+import slideSegunda from './imports/SEGUNDA.JPEG';
+import slideTercera from './imports/TERCERA.JPEG';
+import slideSexta from './imports/SEXTA.JPEG';
+import img2176 from './imports/IMG_2176.JPEG';
+import img2198 from './imports/IMG_2198.JPEG';
+import slideCuarta from './imports/CUARTA.JPEG';
+import slideQuinta from './imports/QUINTA.JPEG';
+import img2182 from './imports/IMG_2182.JPEG';
+import img2186 from './imports/IMG_2186.JPEG';
+import img2187 from './imports/IMG_2187.JPEG';
+import img2189 from './imports/IMG_2189.JPEG';
+import img2192 from './imports/IMG_2192.JPEG';
+import img2194 from './imports/IMG_2194.JPEG';
+import img2199 from './imports/IMG_2199.JPEG';
 
-const HERO_PHOTO: string | null = null; // → heroPrincipal
+const HERO_PHOTO: string | null = heroPrincipal;
 
 const GALLERY_SLIDES: { src: string | null; alt: string }[] = [
-  { src: null, alt: 'Felipe y Daniela — fotografía 2' }, // → slideSegunda
-  { src: null, alt: 'Felipe y Daniela — fotografía 3' }, // → slideTercera
-  { src: null, alt: 'Felipe y Daniela — fotografía 4' }, // → slideCuarta
-  { src: null, alt: 'Felipe y Daniela — fotografía 5' }, // → slideQuinta
-  { src: null, alt: 'Felipe y Daniela — fotografía 6' }, // → slideSexta
+  { src: slideSegunda, alt: 'Felipe y Daniela — fotografía 2' },
+  { src: slideTercera, alt: 'Felipe y Daniela — fotografía 3' },
+  { src: slideCuarta, alt: 'Felipe y Daniela — fotografía 4' },
+  { src: slideQuinta, alt: 'Felipe y Daniela — fotografía 5' },
+  { src: slideSexta, alt: 'Felipe y Daniela — fotografía 6' },
+  { src: img2176, alt: 'Felipe y Daniela — fotografía 2176' },
+  { src: img2182, alt: 'Felipe y Daniela — fotografía' },
+  { src: img2186, alt: 'Felipe y Daniela — fotografía' },
+  { src: img2187, alt: 'Felipe y Daniela — fotografía' },
+  { src: img2189, alt: 'Felipe y Daniela — fotografía' },
+  { src: img2192, alt: 'Felipe y Daniela — fotografía' },
+  { src: img2194, alt: 'Felipe y Daniela — fotografía' },
+  { src: img2198, alt: 'Felipe y Daniela — fotografía' },
+  { src: img2199, alt: 'Felipe y Daniela — fotografía' },
 ];
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
@@ -85,92 +102,132 @@ const CheckIcon = () => (
 function Gallery() {
   const n = GALLERY_SLIDES.length;
   const [current, setCurrent] = useState(0);
-  const [revealed, setRevealed] = useState<Set<number>>(new Set([0]));
-  const touchStartX = useRef(0);
+  const trackRef = useRef<HTMLDivElement>(null);
 
   const go = useCallback((index: number) => {
-    const next = ((index % n) + n) % n;
+    let next = index;
+    if (next < 0) next = n - 1;
+    if (next >= n) next = 0;
     setCurrent(next);
-    setRevealed((prev) => { const s = new Set(prev); s.add(next); return s; });
+    
+    // Scroll the track smoothly
+    if (trackRef.current) {
+      const slideEl = trackRef.current.children[next] as HTMLElement;
+      if (slideEl) {
+        const trackCenter = trackRef.current.offsetWidth / 2;
+        const slideCenter = slideEl.offsetLeft + slideEl.offsetWidth / 2;
+        trackRef.current.scrollTo({
+          left: slideCenter - trackCenter,
+          behavior: 'smooth'
+        });
+      }
+    }
   }, [n]);
 
-  // Keyboard navigation — functional setState avoids stale closure
+  // Keyboard navigation
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        setCurrent((c) => { const next = (c - 1 + n) % n; setRevealed((p) => { const s = new Set(p); s.add(next); return s; }); return next; });
-      }
-      if (e.key === 'ArrowRight') {
-        setCurrent((c) => { const next = (c + 1) % n; setRevealed((p) => { const s = new Set(p); s.add(next); return s; }); return next; });
-      }
+      if (e.key === 'ArrowLeft') go(current - 1);
+      if (e.key === 'ArrowRight') go(current + 1);
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [n]);
+  }, [current, go]);
+
+  // Update current based on native scroll (Snap observation)
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    
+    let isScrolling: any;
+    const handleScroll = () => {
+      window.clearTimeout(isScrolling);
+      isScrolling = setTimeout(() => {
+        // Find the most centered child
+        const trackCenter = track.scrollLeft + track.offsetWidth / 2;
+        let closestIndex = 0;
+        let minDistance = Infinity;
+        
+        Array.from(track.children).forEach((child, i) => {
+          const childCenter = (child as HTMLElement).offsetLeft + (child as HTMLElement).offsetWidth / 2;
+          const distance = Math.abs(trackCenter - childCenter);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestIndex = i;
+          }
+        });
+        
+        if (closestIndex !== current) {
+          setCurrent(closestIndex);
+        }
+      }, 100);
+    };
+    
+    track.addEventListener('scroll', handleScroll);
+    return () => track.removeEventListener('scroll', handleScroll);
+  }, [current]);
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div
-        className="relative aspect-[4/5] md:aspect-[4/3] overflow-hidden bg-khaki-200/50"
-        role="region"
-        aria-label="Galería de fotos de Felipe y Daniela"
-        aria-live="polite"
-        onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
-        onTouchEnd={(e) => {
-          const delta = e.changedTouches[0].clientX - touchStartX.current;
-          if (Math.abs(delta) > 40) go(current + (delta < 0 ? 1 : -1));
-        }}
+    <div className="anim-gallery max-w-[100vw] mx-auto overflow-hidden pb-12 pt-6 relative">
+      <div 
+        ref={trackRef}
+        className="flex gap-4 md:gap-8 px-[10vw] md:px-[30vw] overflow-x-auto snap-x snap-mandatory hide-scrollbar items-center"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {GALLERY_SLIDES.map((slide, i) => (
-          <div
-            key={i}
-            className="absolute inset-0 transition-opacity duration-300"
-            style={{ opacity: i === current ? 1 : 0 }}
-            aria-hidden={i !== current}
-          >
-            {revealed.has(i) ? (
-              slide.src ? (
+        {GALLERY_SLIDES.map((slide, i) => {
+          const isActive = i === current;
+          return (
+            <div
+              key={i}
+              onClick={() => go(i)}
+              className={`snap-center shrink-0 transition-all duration-700 ease-out cursor-pointer select-none rounded-md overflow-hidden relative shadow-2xl
+                ${isActive ? 'w-[80vw] md:w-[40vw] aspect-[4/5] opacity-100 scale-100' : 'w-[70vw] md:w-[30vw] aspect-[4/5] opacity-40 scale-[0.85] grayscale-[30%] hover:opacity-70'}
+              `}
+            >
+              {slide.src ? (
                 <img
                   src={slide.src}
                   alt={slide.alt}
-                  loading={i === 0 ? 'eager' : 'lazy'}
+                  loading={i < 3 ? 'eager' : 'lazy'}
                   decoding="async"
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full border border-khaki-300/50 flex flex-col items-center justify-center gap-2">
+                <div className="w-full h-full border border-khaki-300/50 flex flex-col items-center justify-center gap-2 bg-khaki-200/50">
                   <p className="text-khaki-500 text-xs uppercase tracking-widest">{slide.alt}</p>
-                  <p className="text-khaki-400 text-[10px]">foto por agregar</p>
                 </div>
-              )
-            ) : null}
-          </div>
-        ))}
-
-        {/* Counter */}
-        <div
-          className="absolute bottom-3 right-3 bg-khaki-900/60 backdrop-blur-sm text-khaki-100 text-xs font-light px-2.5 py-1 rounded-full"
-          aria-label={`Foto ${current + 1} de ${n}`}
-        >
-          {current + 1} / {n}
-        </div>
-
-        {/* Arrow buttons */}
+              )}
+              {/* Inner frame overlay for elegance */}
+              <div className="absolute inset-0 border border-white/20 pointer-events-none mix-blend-overlay rounded-md" aria-hidden="true" />
+            </div>
+          );
+        })}
+      </div>
+      
+      {/* Controls */}
+      <div className="absolute bottom-0 left-0 right-0 flex justify-center items-center gap-6 mt-8 pointer-events-none">
         <button
-          onClick={() => go(current - 1)}
-          className="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-khaki-900/50 backdrop-blur-sm text-khaki-100 text-xl flex items-center justify-center hover:bg-khaki-900/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-khaki-300"
-          aria-label="Foto anterior"
+          onClick={(e) => { e.stopPropagation(); go(current - 1); }}
+          className="w-10 h-10 rounded-full border border-khaki-300 text-khaki-700 flex items-center justify-center hover:bg-khaki-200 transition-colors pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-khaki-700"
+          aria-label="Anterior"
         >
-          ‹
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
+        <span className="text-xs uppercase tracking-widest text-khaki-500 tabular-nums">
+          {String(current + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}
+        </span>
         <button
-          onClick={() => go(current + 1)}
-          className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-khaki-900/50 backdrop-blur-sm text-khaki-100 text-xl flex items-center justify-center hover:bg-khaki-900/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-khaki-300"
-          aria-label="Foto siguiente"
+          onClick={(e) => { e.stopPropagation(); go(current + 1); }}
+          className="w-10 h-10 rounded-full border border-khaki-300 text-khaki-700 flex items-center justify-center hover:bg-khaki-200 transition-colors pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-khaki-700"
+          aria-label="Siguiente"
         >
-          ›
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
         </button>
       </div>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+      `}} />
     </div>
   );
 }
@@ -242,6 +299,10 @@ export default function App() {
       gsap.utils.toArray<Element>('.anim-section-title').forEach((el) => {
         gsap.from(el, { autoAlpha: 0, y: 32, duration: 0.85, ease: 'power2.out', scrollTrigger: { trigger: el, start: 'top 88%' } });
       });
+      gsap.utils.toArray<Element>('.anim-gallery').forEach((el) => {
+        gsap.from(el, { autoAlpha: 0, y: 32, duration: 1, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 85%' } });
+      });
+
       gsap.from('.anim-countdown-block', {
         autoAlpha: 0, y: 20, scale: 0.9, duration: 0.6, ease: 'back.out(1.2)', stagger: 0.1,
         scrollTrigger: { trigger: '.anim-countdown-row', start: 'top 82%' },
@@ -320,6 +381,11 @@ export default function App() {
     audioRef.current?.play().catch(() => setIsPlaying(false));
   };
 
+  const handleEnterSilent = () => {
+    setHasEntered(true);
+    setIsPlaying(false);
+  };
+
   const togglePlay = () => {
     if (!audioRef.current) return;
     if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
@@ -335,7 +401,7 @@ export default function App() {
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="font-cursive text-4xl text-khaki-800">Admin — F & D</h1>
+              <h1 className="font-display font-light tracking-wide text-4xl text-khaki-800">Admin — F & D</h1>
               <p className="text-khaki-700 text-sm mt-1">Panel de confirmaciones de asistencia</p>
             </div>
             <button
@@ -432,12 +498,21 @@ export default function App() {
           <p className="anim-loading-tagline tracking-widest uppercase text-sm md:text-base text-khaki-800 font-light">
             Tenemos una invitación para ti
           </p>
-          <button
-            onClick={handleEnter}
-            className="anim-loading-btn mt-8 px-8 py-3 bg-khaki-800 text-khaki-100 rounded-full uppercase tracking-wider text-sm hover:bg-khaki-900 transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-khaki-800 focus-visible:ring-offset-2 focus-visible:ring-offset-khaki-100"
-          >
-            Abrir Invitación
-          </button>
+          <div className="anim-loading-btn mt-8 flex flex-col items-center gap-3">
+            <button
+              onClick={handleEnter}
+              className="px-8 py-3 bg-khaki-800 text-khaki-100 rounded-full uppercase tracking-wider text-sm hover:bg-khaki-900 transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-khaki-800 focus-visible:ring-offset-2 focus-visible:ring-offset-khaki-100 flex items-center gap-2"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              Ponle música a este momento
+            </button>
+            <button
+              onClick={handleEnterSilent}
+              className="text-sm text-khaki-700 hover:text-khaki-900 transition-colors underline underline-offset-4 decoration-khaki-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-khaki-700 rounded-sm px-2 py-1"
+            >
+              Entrar en silencio
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -508,16 +583,19 @@ export default function App() {
         <div className="max-w-5xl mx-auto flex flex-col md:grid md:grid-cols-2 items-center justify-center gap-12 md:gap-16 min-h-[calc(100vh-14rem)]">
 
           {/* Foto — encima en mobile · columna izquierda en desktop */}
-          <div className="anim-hero-arch-photo flex justify-center md:justify-end">
-            <div className="relative w-52 md:w-72" style={{ aspectRatio: '180/230' }}>
+          <div className="anim-hero-arch-photo flex justify-center md:justify-end w-full">
+            <div className="relative w-[75vw] max-w-[320px] md:max-w-[400px] lg:max-w-[480px] xl:max-w-[520px]" style={{ aspectRatio: '180/230' }}>
               {/* Foto recortada en la silueta del arco */}
               <div className="absolute inset-0 overflow-hidden" style={{ clipPath: 'url(#hero-arch-clip)' }}>
                 {HERO_PHOTO ? (
                   <img
                     src={HERO_PHOTO}
                     alt="Felipe y Daniela"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover origin-center"
+                    style={{ imageRendering: 'high-quality' }}
                     loading="eager"
+                    fetchPriority="high"
+                    decoding="sync"
                   />
                 ) : (
                   <div className="w-full h-full bg-khaki-200/70 flex flex-col items-center justify-center gap-2">
@@ -533,7 +611,7 @@ export default function App() {
 
           {/* Texto — debajo en mobile · columna derecha en desktop */}
           <div className="flex flex-col items-center md:items-start text-center md:text-left gap-6">
-            <p className="anim-hero-quote max-w-md text-khaki-700 font-light leading-relaxed italic text-lg md:text-xl">
+            <p className="anim-hero-quote max-w-md text-khaki-700 font-display font-light leading-relaxed italic text-lg md:text-xl">
               Hay amores que empiezan con un encuentro.<br/>
               El nuestro también.<br/><br/>
               Pero con el tiempo entendimos que amar no se trata<br className="hidden md:block"/>
@@ -569,7 +647,7 @@ export default function App() {
 
       {/* ── 3. CUENTA REGRESIVA ──────────────────────────────────────────── */}
       <section id="countdown" className="scroll-mt-14 py-24 bg-khaki-800 text-khaki-100 px-4 text-center">
-        <h2 className="anim-section-title font-cursive text-4xl md:text-6xl text-khaki-300 mb-12">
+        <h2 className="anim-section-title font-display font-light tracking-wide text-4xl md:text-6xl text-khaki-300 mb-12">
           Faltan muy pocos días para decir &ldquo;Sí, acepto&rdquo;
         </h2>
 
@@ -596,15 +674,15 @@ export default function App() {
 
       {/* ── 4. GALERÍA ───────────────────────────────────────────────────── */}
       <section className="py-24 px-4 bg-khaki-100 text-center">
-        <h2 className="anim-section-title font-cursive text-5xl md:text-6xl text-khaki-800 mb-12">
+        <h2 className="anim-section-title font-display font-light tracking-wide text-5xl md:text-6xl text-khaki-800 mb-12">
           Camina un ratico por esta historia
         </h2>
-        <Gallery/>
+        <Gallery />
       </section>
 
       {/* ── 5. UBICACIÓN ─────────────────────────────────────────────────── */}
       <section id="ubicacion" className="scroll-mt-14 py-24 px-4 bg-khaki-50 text-center">
-        <h2 className="anim-section-title font-cursive text-5xl md:text-6xl text-khaki-800 mb-16">Ubicación y lugares</h2>
+        <h2 className="anim-section-title font-display font-light tracking-wide text-5xl md:text-6xl text-khaki-800 mb-16">Ubicación y lugares</h2>
         <div className="anim-location-grid max-w-3xl mx-auto grid md:grid-cols-2 gap-12">
 
           {/* Ceremonia */}
@@ -668,68 +746,89 @@ export default function App() {
       </section>
 
       {/* ── 6. ITINERARIO ────────────────────────────────────────────────── */}
-      <section className="py-24 px-4">
-        <h2 className="anim-section-title font-cursive text-5xl md:text-6xl text-khaki-800 mb-16 text-center">Timeline</h2>
+      <section className="py-24 px-4 bg-khaki-50">
+        <h2 className="anim-section-title font-display font-light tracking-wide text-5xl md:text-6xl text-khaki-800 mb-16 text-center">Timeline</h2>
 
-        {/* Desktop: winding path grid */}
-        <div className="hidden md:block max-w-2xl mx-auto">
-          <div className="anim-timeline relative grid grid-cols-2" style={{ gridTemplateRows: 'repeat(4, 120px)' }}>
-            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M 50 12 C 82 19, 82 31, 50 38 C 18 45, 18 56, 50 63 C 82 70, 82 81, 50 88" fill="none" stroke="#848867" strokeWidth="0.8" vectorEffect="non-scaling-stroke"/>
-              {([
-                [50, 12], [50, 38], [50, 63], [50, 88],
-              ] as [number, number][]).map(([x, y], i) => (
-                <circle key={i} cx={x} cy={y} r="2.2" fill="#EBE4D3" stroke="#848867" strokeWidth="1" vectorEffect="non-scaling-stroke"/>
-              ))}
-            </svg>
-            {[
-              { time: '1:30 PM', event: 'Llegada de Invitados', sub: 'Llegada a la Parroquia',         col: 1, row: 1, align: 'right' as const },
-              { time: '2:00 PM', event: 'Ceremonia',            sub: '',                               col: 2, row: 2, align: 'left'  as const },
-              { time: '4:00 PM', event: 'Recepción',            sub: 'Nos vemos en Galilea Campestre', col: 1, row: 3, align: 'right' as const },
-              { time: '9:00 PM', event: 'Fin de una noche inolvidable', sub: '',                       col: 2, row: 4, align: 'left'  as const },
-            ].map((item) => (
-              <div
-                key={item.time}
-                className={`anim-timeline-item flex items-center ${item.align === 'right' ? 'justify-end pr-10 text-right' : 'pl-10 text-left'}`}
-                style={{ gridColumn: item.col, gridRow: item.row }}
-              >
-                <div>
-                  <p className="text-xs text-khaki-500 font-semibold tracking-widest">{item.time}</p>
-                  <h4 className="text-lg text-khaki-800 mt-0.5">{item.event}</h4>
-                  {item.sub && <p className="text-xs text-khaki-700 italic mt-0.5">{item.sub}</p>}
+        {(() => {
+          const items = [
+            { time: '1:30 PM', event: 'Llegada de Invitados', sub: 'Llegada a la Parroquia',         Icon: Users },
+            { time: '2:00 PM', event: 'Ceremonia',            sub: '',                               Icon: Heart },
+            { time: '4:00 PM', event: 'Recepción',            sub: 'Nos vemos en Galilea Campestre', Icon: Wine  },
+            { time: '9:00 PM', event: 'Fin de una noche inolvidable', sub: '',                       Icon: Moon  },
+          ];
+          return (
+            <>
+              {/* Desktop — alternating left / right */}
+              <div className="hidden md:block max-w-3xl mx-auto">
+                <div className="relative">
+                  {/* Straight vertical line */}
+                  <div className="absolute left-1/2 -translate-x-1/2 top-10 bottom-10 w-px bg-khaki-300" aria-hidden="true"/>
+                  <div className="space-y-10">
+                    {items.map((item, i) => {
+                      const isLeft = i % 2 === 0;
+                      return (
+                        <div key={i} className="anim-timeline-item relative grid grid-cols-[1fr_80px_1fr] items-center">
+                          {/* Left slot */}
+                          <div className={`pr-10 text-right ${isLeft ? '' : 'pointer-events-none select-none opacity-0'}`} aria-hidden={!isLeft}>
+                            <p className="text-xs text-khaki-500 font-semibold tracking-widest mb-1">{item.time}</p>
+                            <h4 className="text-xl text-khaki-800 font-light leading-snug">{item.event}</h4>
+                            {item.sub && <p className="text-sm text-khaki-700 italic mt-1">{item.sub}</p>}
+                          </div>
+
+                          {/* Icon circle — centrado sobre la línea */}
+                          <div className="z-10 flex justify-center">
+                            <div className="w-20 h-20 rounded-full bg-khaki-800 text-khaki-100 flex items-center justify-center shadow-md ring-4 ring-khaki-50">
+                              <item.Icon size={32} strokeWidth={1.25} aria-hidden="true"/>
+                            </div>
+                          </div>
+
+                          {/* Right slot */}
+                          <div className={`pl-10 text-left ${!isLeft ? '' : 'pointer-events-none select-none opacity-0'}`} aria-hidden={isLeft}>
+                            <p className="text-xs text-khaki-500 font-semibold tracking-widest mb-1">{item.time}</p>
+                            <h4 className="text-xl text-khaki-800 font-light leading-snug">{item.event}</h4>
+                            {item.sub && <p className="text-sm text-khaki-700 italic mt-1">{item.sub}</p>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Mobile: stacked with wavy line */}
-        <div className="anim-timeline-mobile md:hidden max-w-xs mx-auto relative pl-10">
-          <svg className="absolute left-3 top-2 pointer-events-none" style={{ width: '2px', height: 'calc(100% - 8px)' }} viewBox="0 0 4 100" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M 2 0 C 4 17, 0 33, 2 50 C 4 67, 0 83, 2 100" fill="none" stroke="#848867" strokeWidth="2"/>
-          </svg>
-          <div className="space-y-14">
-            {[
-              { time: '1:30 PM', event: 'Llegada de Invitados', sub: 'Llegada a la Parroquia' },
-              { time: '2:00 PM', event: 'Ceremonia',            sub: '' },
-              { time: '4:00 PM', event: 'Recepción',            sub: 'Nos vemos en Galilea Campestre' },
-              { time: '9:00 PM', event: 'Fin de una noche inolvidable', sub: '' },
-            ].map((item, i) => (
-              <div key={i} className="anim-timeline-mobile-item relative">
-                <div className="absolute -left-[30px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-khaki-500 bg-khaki-50"/>
-                <p className="text-xs text-khaki-500 font-semibold tracking-widest">{item.time}</p>
-                <h4 className="text-lg text-khaki-800 mt-0.5">{item.event}</h4>
-                {item.sub && <p className="text-xs text-khaki-700 italic mt-0.5">{item.sub}</p>}
+              {/* Mobile — línea recta izquierda, íconos sobre ella */}
+              <div className="anim-timeline-mobile md:hidden max-w-sm mx-auto">
+                <div className="relative pl-24">
+                  {/* Straight vertical line */}
+                  <div className="absolute left-10 top-10 bottom-10 w-px bg-khaki-300" aria-hidden="true"/>
+                  <div className="space-y-10">
+                    {items.map((item, i) => (
+                      <div key={i} className="anim-timeline-mobile-item relative flex items-start gap-0">
+                        {/* Icon */}
+                        <div className="absolute -left-14 top-0 z-10">
+                          <div className="w-16 h-16 rounded-full bg-khaki-800 text-khaki-100 flex items-center justify-center shadow-md ring-4 ring-khaki-50">
+                            <item.Icon size={26} strokeWidth={1.25} aria-hidden="true"/>
+                          </div>
+                        </div>
+                        {/* Text */}
+                        <div className="pt-1">
+                          <p className="text-xs text-khaki-500 font-semibold tracking-widest mb-1">{item.time}</p>
+                          <h4 className="text-lg text-khaki-800 font-light leading-snug">{item.event}</h4>
+                          {item.sub && <p className="text-sm text-khaki-700 italic mt-1">{item.sub}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
+            </>
+          );
+        })()}
       </section>
 
       {/* ── 7. DRESS CODE ────────────────────────────────────────────────── */}
       <section className="py-24 bg-khaki-800 text-khaki-100 px-4 text-center">
         <div className="anim-dresscode">
-          <h2 className="anim-section-title font-cursive text-5xl md:text-6xl text-khaki-300 mb-8">Dress Code: Formal Campestre</h2>
+          <h2 className="anim-section-title font-display font-light tracking-wide text-5xl md:text-6xl text-khaki-300 mb-8">Dress Code: Formal Campestre</h2>
           <div className="max-w-sm mx-auto space-y-4 mb-10">
             <p className="text-base font-light text-khaki-200/90">
               <span className="uppercase tracking-widest text-xs text-khaki-400 block mb-1">Ellas</span>
@@ -754,7 +853,7 @@ export default function App() {
       {/* ── 8. RSVP ──────────────────────────────────────────────────────── */}
       <section id="rsvp" className="scroll-mt-14 py-24 px-4 bg-khaki-100 text-center">
         <div className="anim-rsvp-inner max-w-xl mx-auto">
-          <h2 className="font-cursive text-5xl md:text-6xl text-khaki-800 mb-6">¡Queremos celebrar contigo!</h2>
+          <h2 className="font-display font-light tracking-wide text-5xl md:text-6xl text-khaki-800 mb-6">¡Queremos celebrar contigo!</h2>
           <p className="text-base text-khaki-700 font-light leading-relaxed mb-10 max-w-md mx-auto">
             Tu presencia hace que este día sea aún más bonito. Si aún no has registrado tu asistencia en el enlace, por favor confirma si nos acompañas:
           </p>
